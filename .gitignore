@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+*.egg
+
+# 仮想環境
+venv/
+.venv/
+env/
+
+# データベース
+data/*.db
+
+# ログ
+logs/*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# テスト
+.pytest_cache/
+.coverage
+htmlcov/

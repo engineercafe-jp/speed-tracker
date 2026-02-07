@@ -1,0 +1,45 @@
+# エンジニアカフェ運用設定
+cafe:
+  open_hour: 9
+  close_hour: 22
+
+# 計測設定
+speedtest:
+  command: "speedtest"
+  timeout_sec: 120
+  retry_count: 3
+  retry_wait_sec: 10
+
+# スケジュール（cron 設定の参考値）
+schedule:
+  interval_minutes: 15
+
+# データ保存
+storage:
+  db_path: "data/speedtest.db"
+  retention_days: 90
+
+# 快適度スコア
+scoring:
+  weights:
+    download: 0.35
+    upload: 0.20
+    ping: 0.30
+    jitter: 0.15
+  thresholds:
+    download_max_mbps: 100
+    upload_max_mbps: 50
+    ping_max_ms: 100
+    jitter_max_ms: 50
+  labels:
+    - { min: 90, max: 100, label: "非常に快適" }
+    - { min: 70, max: 89,  label: "快適" }
+    - { min: 50, max: 69,  label: "やや不安定" }
+    - { min: 0,  max: 49,  label: "不快" }
+
+# 可視化設定
+visualization:
+  colormap: "RdYlGn"
+  dpi: 150
+  assets_dir: "assets"
+  days_of_week: ["月", "火", "水", "木", "金", "土", "日"]
