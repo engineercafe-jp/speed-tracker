@@ -14,6 +14,10 @@ from pathlib import Path
 
 import numpy as np
 import matplotlib
+
+# 非対話バックエンドを先に設定する（pyplot import 前が必須）
+matplotlib.use("Agg")
+
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import seaborn as sns
@@ -22,10 +26,6 @@ from src.config import load_config, get_assets_dir
 from src.storage import get_hourly_averages, get_recent_measurements
 
 logger = logging.getLogger(__name__)
-
-# 非対話バックエンドを使用する（サーバ環境対応）
-matplotlib.use("Agg")
-
 
 def _setup_japanese_font() -> None:
     """日本語フォントを自動設定する.
