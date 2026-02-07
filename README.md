@@ -17,7 +17,8 @@
 
 ### 前提条件
 
-- Python 3.11 以上
+- Python 3.12
+- `uv`（Python と依存管理）
 - Ookla Speedtest CLI
 
 ### Ookla Speedtest CLI のインストール
@@ -43,9 +44,13 @@ speedtest --version
 ```bash
 git clone <repository-url>
 cd speed-tracker
+uv python install 3.12
+uv python pin --global 3.12
 uv venv --python 3.12
 uv pip install -r requirements.txt
 ```
+
+`make` コマンドを使う場合も、`.venv` 作成後に実行すること。
 
 ## 使い方
 
@@ -122,3 +127,8 @@ speed-tracker/
 - **storage**: DB パス、保存期間
 - **scoring**: 各指標の重み・閾値、快適度ラベル
 - **visualization**: カラーマップ、DPI、曜日ラベル
+
+## 補足
+
+- 22時時点でデータが少ない日でも、レポート生成は継続し、欠損セルは `-` 表示になる。
+- 開館時間外（22時以降・9時前）は集計対象外である。
