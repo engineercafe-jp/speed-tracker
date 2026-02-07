@@ -22,8 +22,8 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import seaborn as sns
 
-from src.config import load_config, get_assets_dir
-from src.storage import get_hourly_averages, get_recent_measurements
+from .config import load_config, get_assets_dir
+from .storage import get_hourly_averages, get_recent_measurements
 
 logger = logging.getLogger(__name__)
 
