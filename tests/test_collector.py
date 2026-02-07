@@ -13,6 +13,7 @@ from src.config import load_config
 from src.collector import (
     run_speedtest,
     _parse_result,
+    _resolve_speedtest_command,
     SpeedtestError,
     SpeedtestTimeoutError,
     SpeedtestParseError,
@@ -203,3 +204,30 @@ class TestRunSpeedtest:
         called_cmd = mock_run.call_args[0][0]
         assert called_cmd[0] == "/usr/local/bin/speedtest"
         assert "--format=json" in called_cmd
+
+
+class TestResolveSpeedtestCommand:
+    """_resolve_speedtest_command のテストケース."""
+
+    @patch("src.collector.shutil.which")
+    def test_resolve_from_path(self, mock_which):
+        """PATH 上で見つかる場合はそのパスを返す."""
+        mock_which.side_effect = lambda cmd: "/mock/bin/speedtest" if cmd == "speedtest" else None
+        assert _resolve_speedtest_command("speedtest") == "/mock/bin/speedtest"
+
+    @patch("src.collector.shutil.which")
+    def test_resolve_from_fallback(self, mock_which):
+        """PATH 上で見つからない場合に既知パスを利用する."""
+        def which_side_effect(cmd):
+            if cmd == "speedtest":
+                return None
+            if cmd == "/opt/homebrew/bin/speedtest":
+                return "/opt/homebrew/bin/speedtest"
+            return None
+
+        mock_which.side_effect = which_side_effect
+        assert _resolve_speedtest_command("speedtest") == "/opt/homebrew/bin/speedtest"
+
+    def test_keep_explicit_path(self):
+        """明示パス指定はそのまま返す."""
+        assert _resolve_speedtest_command("/custom/speedtest") == "/custom/speedtest"

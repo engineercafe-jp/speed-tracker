@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import time
 import logging
+import shutil
 import subprocess
 from datetime import datetime
 
@@ -28,6 +29,36 @@ class SpeedtestTimeoutError(SpeedtestError):
 
 class SpeedtestParseError(SpeedtestError):
     """Speedtest CLI の出力の JSON パースに失敗した場合の例外."""
+
+
+def _resolve_speedtest_command(command: str) -> str:
+    """Speedtest コマンド実行パスを解決する.
+
+    cron のような最小 PATH 環境でも実行できるよう、よく使う配置先を補完する。
+    """
+    if "/" in command:
+        return command
+
+    resolved = shutil.which(command)
+    if resolved:
+        return resolved
+
+    fallback_candidates = [
+        "/opt/homebrew/bin/speedtest",  # macOS (Apple Silicon, Homebrew)
+        "/usr/local/bin/speedtest",     # macOS/Linux (Homebrew, 手動配置)
+        "/usr/bin/speedtest",           # Linux package
+    ]
+    for candidate in fallback_candidates:
+        if shutil.which(candidate):
+            logger.warning(
+                "PATH 上で %s が見つからないため既知パスを使用する: %s",
+                command,
+                candidate,
+            )
+            return candidate
+
+    logger.warning("Speedtest コマンドを解決できないため設定値をそのまま使用する: %s", command)
+    return command
 
 
 def _parse_result(raw_json: str) -> dict:
@@ -109,7 +140,7 @@ def run_speedtest(config: dict | None = None) -> dict:
         config = load_config()
 
     st_config = config["speedtest"]
-    command = st_config["command"]
+    command = _resolve_speedtest_command(st_config["command"])
     timeout = st_config["timeout_sec"]
     retry_count = st_config["retry_count"]
     retry_wait = st_config["retry_wait_sec"]
