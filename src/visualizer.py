@@ -20,6 +20,7 @@ matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
+import matplotlib.ticker as mticker
 import seaborn as sns
 
 from .config import load_config, get_assets_dir
@@ -96,6 +97,32 @@ def _resolve_output_path(
     else:
         filename = f"{now.strftime('%Y-%m-%d')}.png"
     return assets_dir / filename
+
+
+def _set_open_hours_xaxis(ax, open_hour: int, close_hour: int) -> None:
+    """開館時間の時刻ラベルをX軸に明示する."""
+    day_start = datetime.now().replace(
+        hour=open_hour,
+        minute=0,
+        second=0,
+        microsecond=0,
+    )
+    day_end = datetime.now().replace(
+        hour=close_hour,
+        minute=0,
+        second=0,
+        microsecond=0,
+    )
+    ax.set_xlim(day_start, day_end)
+    tick_dates = [
+        day_start + timedelta(hours=i)
+        for i in range(close_hour - open_hour + 1)
+    ]
+    tick_labels = [f"{hour}時" for hour in range(open_hour, close_hour + 1)]
+    ax.set_xticks(tick_dates)
+    ax.set_xticklabels(tick_labels, fontsize=10)
+    # 中段グラフでも必ず目盛りラベルを描画する
+    ax.tick_params(axis="x", labelbottom=True)
 
 
 def _setup_japanese_font() -> None:
@@ -341,22 +368,7 @@ def generate_heatmap(
         ax_ping.set_ylim(bottom=0)
 
         # X軸のフォーマット
-        day_start = datetime.now().replace(
-            hour=open_hour,
-            minute=0,
-            second=0,
-            microsecond=0,
-        )
-        day_end = datetime.now().replace(
-            hour=close_hour,
-            minute=0,
-            second=0,
-            microsecond=0,
-        )
-        ax_download.set_xlim(day_start, day_end)
-        ax_download.xaxis.set_major_formatter(mdates.DateFormatter("%H"))
-        ax_download.xaxis.set_major_locator(mdates.HourLocator(interval=1))
-        fig.autofmt_xdate(rotation=0)
+        _set_open_hours_xaxis(ax_download, open_hour, close_hour)
 
         # 凡例を統合する
         lines_dl, labels_dl = ax_download.get_legend_handles_labels()
@@ -368,6 +380,7 @@ def generate_heatmap(
         )
     else:
         # データがない場合のメッセージ
+        _set_open_hours_xaxis(ax_download, open_hour, close_hour)
         ax_download.text(
             0.5, 0.5,
             "本日開館時間のデータなし",
@@ -378,7 +391,6 @@ def generate_heatmap(
             color="gray",
         )
         ax_download.set_yticks([])
-        ax_download.set_xticks([])
 
     ax_download.set_title(
         f"本日開館時間（{open_hour}:00-{close_hour}:00）の速度推移",
@@ -419,7 +431,7 @@ def generate_heatmap(
     )
 
     # レイアウト調整
-    plt.tight_layout()
+    plt.tight_layout(h_pad=2.0)
 
     # 保存
     fig.savefig(str(output_path), dpi=dpi, bbox_inches="tight")
