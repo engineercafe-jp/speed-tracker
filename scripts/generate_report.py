@@ -2,7 +2,7 @@
 """レポート画像生成エントリポイント.
 
 ヒートマップ + 折れ線グラフの複合画像を生成する。
-cron から毎日閉館時に実行される想定である。
+cron から毎時実行される想定である。
 
 使用例:
     python scripts/generate_report.py
@@ -21,7 +21,10 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.config import load_config
 from src.storage import init_db
-from src.visualizer import generate_heatmap
+from src.visualizer import (
+    build_trend_summary_text,
+    generate_heatmap,
+)
 
 
 def _setup_logging() -> None:
@@ -58,7 +61,13 @@ def parse_args() -> argparse.Namespace:
         "-o", "--output",
         type=str,
         default=None,
-        help="出力ファイルパス（デフォルト: assets/YYYY-MM-DD.png）",
+        help="出力ファイルパス（省略時: granularity に応じた自動命名）",
+    )
+    parser.add_argument(
+        "--granularity",
+        choices=["daily", "hourly"],
+        default="hourly",
+        help="デフォルト出力名の粒度（デフォルト: hourly）",
     )
     return parser.parse_args()
 
@@ -76,9 +85,12 @@ def main() -> None:
     init_db(config=config)
 
     try:
+        summary_text = build_trend_summary_text(days=args.days, config=config)
         output_path = generate_heatmap(
             output_path=args.output,
             days=args.days,
+            filename_granularity=args.granularity,
+            summary_text=summary_text,
             config=config,
         )
         logger.info("レポート画像を生成した: %s", output_path)

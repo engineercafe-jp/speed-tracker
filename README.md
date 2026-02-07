@@ -11,7 +11,8 @@
 - **速度計測**: Ookla Speedtest CLI による定期的な回線速度計測（再試行・タイムアウト対応）
 - **データ保存**: SQLite によるローカル保存（90日間の保存期間）
 - **快適度スコア**: 4指標の重み付けスコア（0〜100）
-- **可視化**: 曜日×時間帯のヒートマップ + 直近24時間の速度推移グラフ
+- **可視化**: 曜日×時間帯のヒートマップ + 直近24時間の速度推移グラフ + 傾向サマリ（画像内埋め込み）
+- **傾向サマリ**: 欠損を除外して、良好/不安定時間帯と短期トレンドをテキスト出力
 
 ## セットアップ
 
@@ -63,7 +64,7 @@ uv pip install -r requirements.txt
 ### レポート生成
 
 ```bash
-# デフォルト（過去28日間）
+# デフォルト（過去28日間、毎時ファイル名）
 .venv/bin/python scripts/generate_report.py
 
 # 期間を指定
@@ -91,8 +92,8 @@ uv pip install -r requirements.txt
 # 計測: 15分間隔、開館時間内（9:00-21:45）
 */15 9-21 * * * cd /Users/engineercafejp/speed-tracker && /Users/engineercafejp/speed-tracker/.venv/bin/python /Users/engineercafejp/speed-tracker/scripts/run_speedtest.py >> /Users/engineercafejp/speed-tracker/logs/cron.log 2>&1
 
-# レポート生成: 毎日22時（閉館時）に実行
-0 22 * * * cd /Users/engineercafejp/speed-tracker && /Users/engineercafejp/speed-tracker/.venv/bin/python /Users/engineercafejp/speed-tracker/scripts/generate_report.py >> /Users/engineercafejp/speed-tracker/logs/cron.log 2>&1
+# レポート生成: 毎時5分（9:05-21:05）に実行
+5 9-21 * * * cd /Users/engineercafejp/speed-tracker && /Users/engineercafejp/speed-tracker/.venv/bin/python /Users/engineercafejp/speed-tracker/scripts/generate_report.py --granularity hourly >> /Users/engineercafejp/speed-tracker/logs/cron.log 2>&1
 
 # データクリーンアップ: 毎月1日に90日超のデータを削除
 0 3 1 * * cd /Users/engineercafejp/speed-tracker && /Users/engineercafejp/speed-tracker/.venv/bin/python -c "from src.storage import cleanup_old_data; cleanup_old_data()" >> /Users/engineercafejp/speed-tracker/logs/cron.log 2>&1
@@ -132,3 +133,5 @@ speed-tracker/
 
 - 22時時点でデータが少ない日でも、レポート生成は継続し、欠損セルは `-` 表示になる。
 - 開館時間外（22時以降・9時前）は集計対象外である。
+- 画像は毎時ファイル（例: `assets/2026-02-07_1400.png`）として保存される。
+- 傾向サマリは画像内に埋め込まれる（別テキストファイルは出力しない）。

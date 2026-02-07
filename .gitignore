@@ -16,6 +16,7 @@ env/
 data/*.db
 
 # ログ
+assets/*.png
 logs/*.log
 
 # IDE

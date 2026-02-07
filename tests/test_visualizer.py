@@ -13,6 +13,8 @@ from src.config import load_config
 from src.storage import init_db, save_measurement
 from src.visualizer import (
     generate_heatmap,
+    build_trend_summary_text,
+    generate_trend_summary_file,
     _build_heatmap_data,
     _build_annotation,
 )
@@ -178,3 +180,57 @@ class TestGenerateHeatmap:
             db_path=initialized_db,
         )
         assert result.exists()
+
+    def test_embeds_custom_summary_text(self, tmp_path, initialized_db, config):
+        """カスタムサマリ文字列を指定しても画像生成できる."""
+        output = tmp_path / "with_summary.png"
+        result = generate_heatmap(
+            output_path=output,
+            summary_text="テストサマリ\n2行目",
+            config=config,
+            db_path=initialized_db,
+        )
+        assert result.exists()
+
+    def test_hourly_default_output_path(self, initialized_db, config, tmp_path):
+        """hourly 指定時に YYYY-MM-DD_HH00.png が生成される."""
+        config["visualization"]["assets_dir"] = str(tmp_path / "assets")
+        result = generate_heatmap(
+            filename_granularity="hourly",
+            config=config,
+            db_path=initialized_db,
+        )
+        assert result.exists()
+        # 例: 2026-02-07_1400.png
+        assert len(result.stem.split("_")) == 2
+        assert result.name.endswith("00.png")
+
+
+class TestTrendSummary:
+    """傾向サマリ生成のテストケース."""
+
+    def test_build_summary_with_data(self, initialized_db, config):
+        """データありの場合にサマリ文字列が生成される."""
+        _insert_sample_data(initialized_db, config, days=3)
+        summary = build_trend_summary_text(
+            days=7,
+            config=config,
+            db_path=initialized_db,
+        )
+        assert "快適度トレンドサマリ" in summary
+        assert "観測カバレッジ" in summary
+        assert "良好な時間帯" in summary
+
+    def test_generate_summary_file(self, tmp_path, initialized_db, config):
+        """サマリファイルを生成できる."""
+        _insert_sample_data(initialized_db, config, days=2)
+        summary_path = tmp_path / "report_summary.txt"
+        result = generate_trend_summary_file(
+            summary_path=summary_path,
+            days=7,
+            config=config,
+            db_path=initialized_db,
+        )
+        assert result == summary_path
+        assert result.exists()
+        assert "観測カバレッジ" in result.read_text(encoding="utf-8")
