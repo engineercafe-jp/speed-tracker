@@ -165,6 +165,12 @@ def run_speedtest(config: dict | None = None) -> dict:
             # 非ゼロ終了コードの場合
             if proc.returncode != 0:
                 error_msg = proc.stderr.strip() or f"終了コード: {proc.returncode}"
+                if "HostNotFoundException" in error_msg:
+                    error_msg = (
+                        "DNS解決に失敗した可能性がある。"
+                        "ネットワーク接続/DNS設定/スリープ状態を確認すること。 "
+                        + error_msg
+                    )
                 raise SpeedtestError(f"Speedtest CLI がエラーで終了した: {error_msg}")
 
             # JSON パース

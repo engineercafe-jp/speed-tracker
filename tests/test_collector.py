@@ -165,6 +165,18 @@ class TestRunSpeedtest:
         assert mock_run.call_count == config["speedtest"]["retry_count"]
 
     @patch("src.collector.subprocess.run")
+    def test_adds_dns_hint_on_host_not_found(self, mock_run, config):
+        """HostNotFoundException の場合はDNS確認ヒントを含める."""
+        mock_run.return_value = MagicMock(
+            returncode=2,
+            stdout="",
+            stderr="Configuration - A server with the specified hostname could not be found. (HostNotFoundException)",
+        )
+
+        with pytest.raises(SpeedtestError, match="DNS解決"):
+            run_speedtest(config=config)
+
+    @patch("src.collector.subprocess.run")
     def test_timeout_handling(self, mock_run, config):
         """タイムアウト時に SpeedtestTimeoutError を送出する."""
         mock_run.side_effect = subprocess.TimeoutExpired(

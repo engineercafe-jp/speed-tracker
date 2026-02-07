@@ -5,7 +5,7 @@ cafe:
 
 # 計測設定
 speedtest:
-  command: "speedtest"
+  command: "/opt/homebrew/bin/speedtest"
   timeout_sec: 120
   retry_count: 3
   retry_wait_sec: 10
