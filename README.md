@@ -43,7 +43,8 @@ speedtest --version
 ```bash
 git clone <repository-url>
 cd speed-tracker
-make install
+uv venv --python 3.12
+uv pip install -r requirements.txt
 ```
 
 ## 使い方
@@ -51,39 +52,45 @@ make install
 ### 手動計測
 
 ```bash
-make measure
+.venv/bin/python scripts/run_speedtest.py
 ```
 
 ### レポート生成
 
 ```bash
 # デフォルト（過去28日間）
-make report
+.venv/bin/python scripts/generate_report.py
 
 # 期間を指定
-python scripts/generate_report.py --days 14
+.venv/bin/python scripts/generate_report.py --days 14
 
 # 出力先を指定
-python scripts/generate_report.py -o assets/custom.png
+.venv/bin/python scripts/generate_report.py -o assets/custom.png
 ```
 
 ### テスト実行
 
 ```bash
-make test
+.venv/bin/python -m pytest tests/ -v
 ```
 
 ## cron 設定例
 
+`cron` では相対パスと `python` コマンド依存を避けること。  
+必ず `cd` + 絶対パスの実行ファイルを使う。
+
 ```bash
+# 例: プロジェクト配置先
+# /Users/engineercafejp/speed-tracker
+
 # 計測: 15分間隔、開館時間内（9:00-21:45）
-*/15 9-21 * * * cd /path/to/speed-tracker && python scripts/run_speedtest.py >> logs/cron.log 2>&1
+*/15 9-21 * * * cd /Users/engineercafejp/speed-tracker && /Users/engineercafejp/speed-tracker/.venv/bin/python /Users/engineercafejp/speed-tracker/scripts/run_speedtest.py >> /Users/engineercafejp/speed-tracker/logs/cron.log 2>&1
 
 # レポート生成: 毎日22時（閉館時）に実行
-0 22 * * * cd /path/to/speed-tracker && python scripts/generate_report.py >> logs/cron.log 2>&1
+0 22 * * * cd /Users/engineercafejp/speed-tracker && /Users/engineercafejp/speed-tracker/.venv/bin/python /Users/engineercafejp/speed-tracker/scripts/generate_report.py >> /Users/engineercafejp/speed-tracker/logs/cron.log 2>&1
 
 # データクリーンアップ: 毎月1日に90日超のデータを削除
-0 3 1 * * cd /path/to/speed-tracker && python -c "from src.storage import cleanup_old_data; cleanup_old_data()" >> logs/cron.log 2>&1
+0 3 1 * * cd /Users/engineercafejp/speed-tracker && /Users/engineercafejp/speed-tracker/.venv/bin/python -c "from src.storage import cleanup_old_data; cleanup_old_data()" >> /Users/engineercafejp/speed-tracker/logs/cron.log 2>&1
 ```
 
 ## ディレクトリ構成
