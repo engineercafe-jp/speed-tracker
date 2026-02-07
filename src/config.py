@@ -24,6 +24,7 @@ DEFAULT_CONFIG: dict = {
     "cafe": {
         "open_hour": 9,
         "close_hour": 22,
+        "utc_offset_hours": 9,
     },
     "speedtest": {
         "command": "speedtest",

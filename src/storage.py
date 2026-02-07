@@ -240,6 +240,8 @@ def get_hourly_averages(
         open_hour = config["cafe"]["open_hour"]
     if close_hour is None:
         close_hour = config["cafe"]["close_hour"]
+    utc_offset_hours = int(config["cafe"].get("utc_offset_hours", 9))
+    offset_modifier = f"{utc_offset_hours:+d} hours"
 
     conn = _get_connection(db_path, config)
     try:
@@ -247,28 +249,44 @@ def get_hourly_averages(
         since = (datetime.utcnow() - timedelta(days=days)).isoformat()
 
         # SQLite の strftime で曜日と時間帯を抽出して集計する
+        # Speedtest の measured_at は UTC(Z) を含むため、開館時間の判定前に
+        # カフェのローカル時刻へ変換して扱う。
+        local_dt_expr = (
+            "CASE WHEN measured_at LIKE '%Z' "
+            "THEN datetime(measured_at, ?) "
+            "ELSE measured_at END"
+        )
         # strftime('%w', ...) は 0=日曜 なので、Python の weekday() に変換する
         cursor = conn.cursor()
         cursor.execute(
-            """
+            f"""
             SELECT
                 -- SQLite %w: 0=日,1=月,...,6=土 → Python weekday: 0=月,...,6=日
-                CASE CAST(strftime('%w', measured_at) AS INTEGER)
+                CASE CAST(strftime('%w', {local_dt_expr}) AS INTEGER)
                     WHEN 0 THEN 6  -- 日曜 → 6
-                    ELSE CAST(strftime('%w', measured_at) AS INTEGER) - 1
+                    ELSE CAST(strftime('%w', {local_dt_expr}) AS INTEGER) - 1
                 END AS day_of_week,
-                CAST(strftime('%H', measured_at) AS INTEGER) AS hour,
+                CAST(strftime('%H', {local_dt_expr}) AS INTEGER) AS hour,
                 AVG(comfort_score) AS avg_score,
                 COUNT(*) AS count
             FROM measurements
             WHERE status = 'ok'
               AND measured_at >= ?
-              AND CAST(strftime('%H', measured_at) AS INTEGER) >= ?
-              AND CAST(strftime('%H', measured_at) AS INTEGER) < ?
+              AND CAST(strftime('%H', {local_dt_expr}) AS INTEGER) >= ?
+              AND CAST(strftime('%H', {local_dt_expr}) AS INTEGER) < ?
             GROUP BY day_of_week, hour
             ORDER BY day_of_week, hour
             """,
-            (since, open_hour, close_hour),
+            (
+                offset_modifier,
+                offset_modifier,
+                offset_modifier,
+                since,
+                offset_modifier,
+                open_hour,
+                offset_modifier,
+                close_hour,
+            ),
         )
         rows = cursor.fetchall()
         result = [
