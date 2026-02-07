@@ -143,3 +143,14 @@ class TestGetComfortLabel:
         assert get_comfort_label(70.0, config) == "快適"
         assert get_comfort_label(49.0, config) == "不快"
         assert get_comfort_label(50.0, config) == "やや不安定"
+
+    def test_decimal_boundaries(self, config):
+        """小数境界値が正しく分類される."""
+        assert get_comfort_label(89.9, config) == "快適"
+        assert get_comfort_label(69.9, config) == "やや不安定"
+        assert get_comfort_label(49.9, config) == "不快"
+
+    def test_out_of_range_values_are_clamped(self, config):
+        """0-100 範囲外の値は丸めて分類される."""
+        assert get_comfort_label(120.0, config) == "非常に快適"
+        assert get_comfort_label(-5.0, config) == "不快"

@@ -88,9 +88,17 @@ def get_comfort_label(score: float, config: dict) -> str:
         ラベル文字列（例: "非常に快適"、"快適"、"やや不安定"、"不快"）
     """
     labels = config["scoring"]["labels"]
-    for entry in labels:
-        if entry["min"] <= score <= entry["max"]:
+
+    # 設定外の値が来ても扱えるように 0-100 に丸める
+    normalized = max(0.0, min(100.0, score))
+
+    # 小数境界の隙間を避けるため、min の降順で最初に一致したラベルを採用する
+    # 例: 89.9 は min=70 の「快適」に分類される
+    sorted_labels = sorted(labels, key=lambda entry: entry["min"], reverse=True)
+    for entry in sorted_labels:
+        if normalized >= entry["min"]:
             return entry["label"]
-    # どのラベルにも該当しない場合（通常到達しない）
+
+    # labels が空、または min 設定が不正な場合のフォールバック
     logger.warning("スコア %.1f に対応するラベルが見つからない", score)
     return "不明"
